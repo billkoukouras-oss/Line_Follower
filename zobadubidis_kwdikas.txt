@@ -1,0 +1,131 @@
+from machine import Pin,PWM
+from utime import sleep_ms
+
+# ---------------- MOTOR SETUP ----------------
+
+ENA=PWM(Pin(10))
+IN1=Pin(6,Pin.OUT)
+IN2=Pin(7,Pin.OUT)
+
+IN3=Pin(8,Pin.OUT)
+IN4=Pin(9,Pin.OUT)
+ENB=PWM(Pin(11))
+
+# 🔧 σωστό PWM setup
+ENA.freq(20000)
+ENB.freq(20000)
+
+ENA.duty_u16(0)
+ENB.duty_u16(0)
+
+# ---------------- SPEEDS ----------------
+
+# ✔ σωστό range για duty_u16 (0-65535)
+base_speed = 38000
+turn_speed = 26000
+
+
+# ---------------- SENSORS ----------------
+
+LEFT=Pin(16,Pin.IN)
+MID=Pin(17,Pin.IN)
+RIGHT=Pin(15,Pin.IN)
+
+# ---------------- MOTOR FUNCTIONS ----------------
+
+def motor_speed(left,right):
+    ENA.duty_u16(left)
+    ENB.duty_u16(right)
+
+
+def forward():
+    motor_speed(base_speed,base_speed)
+
+    IN1.high()
+    IN2.low()
+
+    IN3.high()
+    IN4.low()
+
+
+def slight_left():
+    motor_speed(base_speed,turn_speed)
+
+    IN1.high()
+    IN2.low()
+
+    IN3.low()
+    IN4.low()
+
+
+def slight_right():
+    motor_speed(turn_speed,base_speed)
+
+    IN1.low()
+    IN2.low()
+
+    IN3.high()
+    IN4.low()
+
+
+def sharp_left():
+    motor_speed(base_speed,base_speed)
+
+    IN1.high()
+    IN2.low()
+
+    IN3.low()
+    IN4.low()
+
+
+def sharp_right():
+    motor_speed(base_speed,base_speed)
+
+    IN1.low()
+    IN2.low()
+
+    IN3.high()
+    IN4.low()
+
+
+def stop():
+    IN1.low()
+    IN2.low()
+    IN3.low()
+    IN4.low()
+
+
+# ---------------- MAIN LOOP ----------------
+# 1 = black line detected
+
+while True:
+
+    L=LEFT.value()
+    M=MID.value()
+    R=RIGHT.value()
+
+    # center
+    if [L,M,R]==[0,1,0]:
+        forward()
+
+    # 🔁 CROSS LOGIC (ΑΝΤΙΣΤΡΟΦΗ ΣΤΡΟΦΩΝ)
+
+    elif [L,M,R]==[1,0,0]:
+        slight_right()   # LEFT sensor → RIGHT turn
+
+    elif [L,M,R]==[1,1,0]:
+        sharp_right()    # LEFT bias → RIGHT
+
+    elif [L,M,R]==[0,0,1]:
+        slight_left()    # RIGHT sensor → LEFT turn
+
+    elif [L,M,R]==[0,1,1]:
+        sharp_left()     # RIGHT bias → LEFT
+
+    elif [L,M,R]==[1,1,1]:
+        forward()
+
+    elif [L,M,R]==[0,0,0]:
+        stop()
+
+    sleep_ms(10)
